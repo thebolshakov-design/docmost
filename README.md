@@ -28,6 +28,20 @@ To get started with Docmost, please refer to our [documentation](https://docmost
 - Embeds (Airtable, Loom, Miro and more)
 - Translations (10+ languages)
 
+## Fork: Word (.docx) export
+
+This fork adds a Word export in the AGPL codebase. On a page, open **Export** and choose **Word (.docx)**. Markdown and HTML are unchanged.
+
+The server reuses the existing HTML export, including images stored in local storage or S3, and converts that HTML with [Pandoc](https://pandoc.org/). Images are embedded in the `.docx`, and HTML tables become Word tables. The download filename is the page title (Cyrillic and other non-ASCII titles are preserved). The runtime Docker image installs `pandoc`.
+
+Check the converter without the app:
+
+```bash
+node scripts/verify-docx-export.mjs
+```
+
+The script builds a sample page (a table and an image), runs pandoc, and checks that the `.docx` contains `word/media/*` and a `w:tbl` table.
+
 ### Screenshots
 
 <p align="center">

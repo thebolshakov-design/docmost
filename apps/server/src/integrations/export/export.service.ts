@@ -1,8 +1,10 @@
 import {
   BadRequestException,
   Injectable,
+  InternalServerErrorException,
   Logger,
   NotFoundException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { jsonToHtml, jsonToNode } from '../../collaboration/collaboration.util';
 import { ExportFormat } from './dto/export-dto';
@@ -39,6 +41,12 @@ import {
   getProsemirrorContent,
 } from '../../common/helpers/prosemirror/utils';
 import { htmlToMarkdown } from '@docmost/editor-ext';
+import {
+  convertHtmlExportZipToDocx,
+  DocxConversionError,
+  PandocNotFoundError,
+  readStreamToBuffer,
+} from './pandoc-docx';
 
 type AllowedAttachment = { id: string; fileName: string; filePath: string };
 
@@ -181,6 +189,44 @@ export class ExportService {
     });
 
     return { type: 'zip' as const, stream: zipFile, page: pages[0] };
+  }
+
+  /**
+   * Export a single page to Word.
+   * Reuses the HTML export with attachments so image bytes are read through
+   * the configured storage driver (local disk, S3, or Azure), then converts
+   * that HTML to .docx with pandoc. Pandoc embeds local images and keeps
+   * HTML tables as Word tables.
+   */
+  async exportPageToDocx(pageId: string, userId: string): Promise<Buffer> {
+    const result = await this.exportPages(
+      pageId,
+      ExportFormat.HTML,
+      true,
+      false,
+      userId,
+    );
+
+    if (result.type !== 'zip') {
+      throw new InternalServerErrorException(
+        'HTML export did not include page files',
+      );
+    }
+
+    try {
+      const zipBuffer = await readStreamToBuffer(result.stream);
+      return await convertHtmlExportZipToDocx(zipBuffer);
+    } catch (error) {
+      if (error instanceof PandocNotFoundError) {
+        throw new ServiceUnavailableException(
+          'Word export requires pandoc to be installed on the server',
+        );
+      }
+      const detail =
+        error instanceof DocxConversionError ? error.message : String(error);
+      this.logger.error(`Failed to convert page ${pageId} to docx: ${detail}`);
+      throw new InternalServerErrorException('Failed to export page to Word');
+    }
   }
 
   async exportSpace(

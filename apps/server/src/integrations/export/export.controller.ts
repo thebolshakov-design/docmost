@@ -11,7 +11,15 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ExportService } from './export.service';
-import { ExportPageDto, ExportSpaceDto } from './dto/export-dto';
+import {
+  ExportPageDocxDto,
+  ExportPageDto,
+  ExportSpaceDto,
+} from './dto/export-dto';
+import {
+  docxContentDisposition,
+  docxDownloadFileName,
+} from './pandoc-docx';
 import { AuthUser } from '../../common/decorators/auth-user.decorator';
 import { User } from '@docmost/db/types/entity.types';
 import SpaceAbilityFactory from '../../core/casl/abilities/space-ability.factory';
@@ -113,6 +121,50 @@ export class ExportController {
 
       res.send(result.stream);
     }
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  @Post('pages/export-docx')
+  async exportPageDocx(
+    @Body() dto: ExportPageDocxDto,
+    @AuthUser() user: User,
+    @Res() res: FastifyReply,
+  ) {
+    const page = await this.pageRepo.findById(dto.pageId, {
+      includeContent: true,
+    });
+
+    if (!page || page.deletedAt) {
+      throw new NotFoundException('Page not found');
+    }
+
+    await this.pageAccessService.validateCanView(page, user);
+
+    const docx = await this.exportService.exportPageToDocx(dto.pageId, user.id);
+
+    this.auditService.log({
+      event: AuditEvent.PAGE_EXPORTED,
+      resourceType: AuditResource.PAGE,
+      resourceId: page.id,
+      spaceId: page.spaceId,
+      metadata: {
+        title: getPageTitle(page.title),
+        format: 'docx',
+        includeChildren: false,
+        includeAttachments: true,
+        spaceId: page.spaceId,
+      },
+    });
+
+    const fileName = docxDownloadFileName(page.title);
+
+    res.headers({
+      'Content-Type': getMimeType(fileName),
+      'Content-Disposition': docxContentDisposition(fileName),
+    });
+
+    res.send(docx);
   }
 
   @UseGuards(JwtAuthGuard)

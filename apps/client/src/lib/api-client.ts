@@ -13,7 +13,7 @@ api.interceptors.response.use(
     const exemptEndpoints = [
       "/api/pages/export",
       "/api/spaces/export",
-      "/api/docx-export",
+      "/api/pages/export-docx",
       "/api/bases/export-csv",
     ];
     if (response.request.responseURL) {

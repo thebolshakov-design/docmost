@@ -29,6 +29,12 @@ export class ExportPageDto {
   includeAttachments?: boolean;
 }
 
+export class ExportPageDocxDto {
+  @IsString()
+  @IsNotEmpty()
+  pageId: string;
+}
+
 export class ExportSpaceDto {
   @IsString()
   @IsNotEmpty()
