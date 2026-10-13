@@ -14,8 +14,9 @@ RUN pnpm build
 
 FROM base AS installer
 
+# pandoc converts the HTML page export into .docx in the running server.
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends curl bash \
+  && apt-get install -y --no-install-recommends curl bash pandoc \
   && rm -rf /var/lib/apt/lists/*
 
 # drop npm and corepack
@@ -33,6 +34,7 @@ WORKDIR /app
 COPY --from=builder /app/apps/server/dist /app/apps/server/dist
 COPY --from=builder /app/apps/client/dist /app/apps/client/dist
 COPY --from=builder /app/apps/server/package.json /app/apps/server/package.json
+COPY --from=builder /app/apps/client/package.json /app/apps/client/package.json
 
 # Copy packages
 COPY --from=builder /app/packages/editor-ext/dist /app/packages/editor-ext/dist

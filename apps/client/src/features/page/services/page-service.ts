@@ -133,7 +133,7 @@ export async function exportPage(data: IExportPageParams): Promise<void> {
 }
 
 export async function exportPageToDocx(data: { pageId: string }): Promise<void> {
-  const req = await api.post("/docx-export", data, {
+  const req = await api.post("/pages/export-docx", data, {
     responseType: "blob",
   });
 
