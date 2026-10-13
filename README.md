@@ -32,7 +32,7 @@ To get started with Docmost, please refer to our [documentation](https://docmost
 
 This fork adds a Word export in the AGPL codebase. On a page, open **Export** and choose **Word (.docx)**. Markdown and HTML are unchanged.
 
-The server reuses the existing HTML export, including images stored in local storage or S3, and converts that HTML with [Pandoc](https://pandoc.org/). Images are embedded in the `.docx`, and HTML tables become Word tables. The download filename is the page title (Cyrillic and other non-ASCII titles are preserved). The runtime Docker image installs `pandoc`.
+The server reuses the existing HTML export, including images stored in local storage or S3, and converts that HTML with [Pandoc](https://pandoc.org/). The page title is written once. The document is A4 with Calibri and normal margins. Images that are wider than the page shrink to the text width. Tables have borders, a shaded bold header, and columns sized from their text. The download filename is the page title (Cyrillic and other non-ASCII titles are preserved). The runtime Docker image installs `pandoc`.
 
 Check the converter without the app:
 
@@ -40,7 +40,7 @@ Check the converter without the app:
 node scripts/verify-docx-export.mjs
 ```
 
-The script builds a sample page (a table and an image), runs pandoc, and checks that the `.docx` contains `word/media/*` and a `w:tbl` table.
+The script builds a sample page (a table and an image) and checks that the `.docx` contains one title, `word/media/*`, a `w:tbl` table, and cell borders.
 
 ### Screenshots
 
